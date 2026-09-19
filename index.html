@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Для группы ❤️</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❤️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,10 +12,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- Canvas для анимации звезд, рисования сердца и эффектов -->
+  <!-- Canvas для анимации звезд и рисования сердца -->
   <canvas id="canvas"></canvas>
-
   <!-- Интерактивный оверлей -->
   <div class="overlay">
     
@@ -24,13 +23,12 @@
         <span class="icon">🎵</span> <span id="musicText">Музыка: Выкл</span>
       </button>
     </div>
-
     <!-- Блок с романтичным посланием (появляется после завершения рисунка) -->
     <div id="messageBox" class="message-box">
-      <h1 id="loveTitle" class="love-title">Для любимой МК-261</h1>
+      <h1 id="loveTitle" class="love-title">Любимой группе МК-261</h1>
       <p id="loveText" class="love-text">
-        Каждый удар этого сердца бьётся только для тебя. 
-        Ты делаешь этот мир бесконечно теплее и ярче!
+        Математика соединила нас формулами, а универ — крепкой дружбой.
+        Пусть наше счастье будет константой, а успех всегда стремится к бесконечности! ♾️
       </p>
       <div class="message-actions">
         <button id="replayBtn" class="action-btn">
@@ -38,14 +36,12 @@
         </button>
       </div>
     </div>
-
     <!-- Подсказка в начале -->
     <div id="hintText" class="hint-text">
       Коснись экрана или наблюдай за магией...
     </div>
-
   </div>
-
+  <!-- Canvas поверх интерфейса для интерактивных сердечек от кликов -->
+  <canvas id="heartsCanvas"></canvas>
   <script src="script.js"></script>
 </body>
-</html>
