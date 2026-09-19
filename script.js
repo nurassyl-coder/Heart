@@ -2,7 +2,7 @@
  * Romantic Heart Drawing & Interactive Experience
  */
 
-// Canvas & Context Setup
+// Canvas & Context Setupт
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const heartsCanvas = document.getElementById('heartsCanvas');
