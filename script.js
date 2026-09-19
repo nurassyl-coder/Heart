@@ -5,6 +5,8 @@
 // Canvas & Context Setup
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const heartsCanvas = document.getElementById('heartsCanvas');
+const heartsCtx = heartsCanvas.getContext('2d');
 
 // UI Elements
 const messageBox = document.getElementById('messageBox');
@@ -28,12 +30,19 @@ function resize() {
   width = window.innerWidth;
   height = window.innerHeight;
 
+  // Основной холст (звезды и сердце)
   canvas.width = width * dpr;
   canvas.height = height * dpr;
   canvas.style.width = width + 'px';
   canvas.style.height = height + 'px';
-
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Верхний холст (интерактивные сердечки поверх карточки и текста)
+  heartsCanvas.width = width * dpr;
+  heartsCanvas.height = height * dpr;
+  heartsCanvas.style.width = width + 'px';
+  heartsCanvas.style.height = height + 'px';
+  heartsCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const isPortrait = height > width;
   centerX = width / 2;
@@ -117,17 +126,17 @@ class Sparkle {
     this.size *= 0.96;
   }
 
-  draw() {
+  draw(targetCtx = heartsCtx) {
     if (this.life <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = this.life;
-    ctx.fillStyle = this.color;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    targetCtx.save();
+    targetCtx.globalAlpha = this.life;
+    targetCtx.fillStyle = this.color;
+    targetCtx.shadowBlur = 10;
+    targetCtx.shadowColor = this.color;
+    targetCtx.beginPath();
+    targetCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    targetCtx.fill();
+    targetCtx.restore();
   }
 }
 
@@ -157,23 +166,23 @@ class FloatingHeart {
     this.life -= this.decay;
   }
 
-  draw() {
+  draw(targetCtx = heartsCtx) {
     if (this.life <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = this.life;
-    ctx.fillStyle = this.color;
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = this.color;
+    targetCtx.save();
+    targetCtx.globalAlpha = this.life;
+    targetCtx.fillStyle = this.color;
+    targetCtx.shadowBlur = 12;
+    targetCtx.shadowColor = this.color;
 
     // Рисование мини-сердечка через кривые
     const s = this.size;
-    ctx.translate(this.x, this.y);
-    ctx.beginPath();
-    ctx.moveTo(0, -s / 4);
-    ctx.bezierCurveTo(-s / 2, -s, -s, -s / 3, 0, s / 2);
-    ctx.bezierCurveTo(s, -s / 3, s / 2, -s, 0, -s / 4);
-    ctx.fill();
-    ctx.restore();
+    targetCtx.translate(this.x, this.y);
+    targetCtx.beginPath();
+    targetCtx.moveTo(0, -s / 4);
+    targetCtx.bezierCurveTo(-s / 2, -s, -s, -s / 3, 0, s / 2);
+    targetCtx.bezierCurveTo(s, -s / 3, s / 2, -s, 0, -s / 4);
+    targetCtx.fill();
+    targetCtx.restore();
   }
 }
 
@@ -219,9 +228,12 @@ function resetDrawing() {
 function animate(currentTime) {
   requestAnimationFrame(animate);
 
-  // Очистка с эффектом мягкого шлейфа
+  // Очистка основного холста
   ctx.fillStyle = 'rgba(10, 3, 11, 0.28)';
   ctx.fillRect(0, 0, width, height);
+
+  // Очистка верхнего холста с интерактивными сердечками
+  heartsCtx.clearRect(0, 0, width, height);
 
   // 1. Отрисовка звезд
   stars.forEach(star => {
@@ -229,10 +241,10 @@ function animate(currentTime) {
     star.draw();
   });
 
-  // 2. Отрисовка и обновление плавающих сердечек
+  // 2. Отрисовка и обновление плавающих сердечек (поверх карточки и текста)
   for (let i = floatingHearts.length - 1; i >= 0; i--) {
     floatingHearts[i].update();
-    floatingHearts[i].draw();
+    floatingHearts[i].draw(heartsCtx);
     if (floatingHearts[i].life <= 0) {
       floatingHearts.splice(i, 1);
     }
@@ -331,10 +343,10 @@ function animate(currentTime) {
     ctx.restore();
   }
 
-  // 5. Отрисовка и обновление искр
+  // 5. Отрисовка и обновление искр (поверх текста)
   for (let i = sparkles.length - 1; i >= 0; i--) {
     sparkles[i].update();
-    sparkles[i].draw();
+    sparkles[i].draw(heartsCtx);
     if (sparkles[i].life <= 0) {
       sparkles.splice(i, 1);
     }
@@ -361,35 +373,56 @@ function onDrawFinished() {
 }
 
 // ==========================================
-// 6. Интерактивность (Клики, Тапы, Свайпы)
+// 6. Интерактивность (Клики, Тапы, Двойной клик)
 // ==========================================
 function spawnHeartsAt(clientX, clientY, count = 4) {
   for (let i = 0; i < count; i++) {
     floatingHearts.push(new FloatingHeart(
-      clientX + (Math.random() - 0.5) * 24,
-      clientY + (Math.random() - 0.5) * 24
+      clientX + (Math.random() - 0.5) * 26,
+      clientY + (Math.random() - 0.5) * 26
     ));
     sparkles.push(new Sparkle(clientX, clientY, '#ffd166'));
   }
 }
 
+let lastTapTime = 0;
+
 function handlePointerDown(e) {
-  if (e.target.closest('.glass-btn') || e.target.closest('.action-btn') || e.target.closest('.modal-content')) {
+  if (e.target.closest('.glass-btn') || e.target.closest('.action-btn')) {
     return;
   }
-  spawnHeartsAt(e.clientX, e.clientY, 5);
+
+  // Точные координаты относительно холста
+  const rect = heartsCanvas.getBoundingClientRect();
+  const clientX = e.clientX - rect.left;
+  const clientY = e.clientY - rect.top;
+
+  const now = Date.now();
+  const timeDiff = now - lastTapTime;
+  lastTapTime = now;
+
+  // Если это двойной клик / тап (быстрее 350мс) — делаем праздничный салют из сердечек!
+  if (timeDiff < 350) {
+    spawnHeartsAt(clientX, clientY, 14);
+  } else {
+    spawnHeartsAt(clientX, clientY, 5);
+  }
 }
 
 function handlePointerMove(e) {
   // На мобильном при движении пальцем или с зажатой кнопкой мыши пускаем искры
   if (e.pointerType === 'touch' || e.buttons > 0) {
-    if (e.target.closest('.glass-btn') || e.target.closest('.action-btn') || e.target.closest('.modal-content')) {
+    if (e.target.closest('.glass-btn') || e.target.closest('.action-btn')) {
       return;
     }
+    const rect = heartsCanvas.getBoundingClientRect();
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+
     if (Math.random() < 0.45) {
-      sparkles.push(new Sparkle(e.clientX, e.clientY, '#ffd166'));
+      sparkles.push(new Sparkle(clientX, clientY, '#ffd166'));
       if (Math.random() < 0.15) {
-        floatingHearts.push(new FloatingHeart(e.clientX, e.clientY));
+        floatingHearts.push(new FloatingHeart(clientX, clientY));
       }
     }
   }
